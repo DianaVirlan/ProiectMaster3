@@ -6,18 +6,24 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using ProiectMaster3.Models;
+using ProiectMaster3.Data;
+using ProiectMaster3.Models.FacultateViewModels;
 
 namespace ProiectMaster3.Controllers
 {
     public class HomeController : Controller
     {
+
         private readonly ILogger<HomeController> _logger;
 
         public HomeController(ILogger<HomeController> logger)
         {
             _logger = logger;
         }
-
+        public IActionResult Chat()
+        {
+            return View();
+        }
         public IActionResult Index()
         {
             return View();
