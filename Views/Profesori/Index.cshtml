@@ -1,0 +1,84 @@
+﻿@model ProiectMaster3.Models.FacultateViewModels.ProfesorIndexData
+
+@{
+    ViewData["Title"] = "Profesori";
+}
+
+<h1>Profesori</h1>
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Nume</th>
+            <th>Prenume</th>
+            <th>Email</th>
+            <th>Curs</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Profesori)
+        {
+            string selectedRow = "";
+            if (item.ID == (int?)ViewData["CursID"])
+            {
+                selectedRow = "success";
+            }
+            <tr class="@selectedRow">
+                <td>
+                    @Html.DisplayFor(modelItem => item.Nume)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Prenume)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Email)
+                </td>
+                <td>
+                    @{ foreach (var curs in item.Cursuri)
+                        {
+                            @curs.Denumire <br /> }
+                    }
+                </td>
+                <td>
+                    <a asp-action="Index" asp-route-id="@item.ID">Carti</a> |
+                    <a asp-action="Edit" asp-route-id="@item.ID">Edit</a> |
+                    <a asp-action="Details" asp-route-id="@item.ID">Details</a> |
+                    <a asp-action="Delete" asp-route-id="@item.ID">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@if (Model.Carti != null)
+{
+    <h3>Carti publicate</h3>
+    <table class="table">
+        <tr>
+            <th>Titlu</th>
+            <th>Data Publicarii</th>
+        </tr>
+        @foreach (var item in Model.Carti)
+        {
+            string selectedRow = "";
+            if (item.ID == (int?)ViewData["CarteID"])
+            {
+                selectedRow = "success";
+            }
+            <tr class="@selectedRow">
+                <td>
+                    @item.Titlu
+                </td>
+                <td>
+                    @item.DataPublicare
+                </td>
+            </tr>
+        }
+    </table>
+}
+
