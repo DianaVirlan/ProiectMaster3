@@ -20,9 +20,42 @@ namespace ProiectMaster3.Controllers
         }
 
         // GET: Studenti
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string sortOrder, string currentFilter, string searchString, int? pageNumber)
         {
-            return View(await _context.Studenti.ToListAsync());
+            ViewData["CurrentSort"] = sortOrder;
+            ViewData["AnSortParm"] = sortOrder == "An" ? "an_desc" : "An";
+
+            if (searchString != null)
+            {
+                pageNumber = 1;
+            }
+            else
+            {
+                searchString = currentFilter;
+            }
+            ViewData["CurrentFilter"] = searchString;
+            var stundeti = from b in _context.Studenti
+                           select b;
+            if (!String.IsNullOrEmpty(searchString))
+            {
+                stundeti = stundeti.Where(s => s.Nume.Contains(searchString));
+            }
+            switch (sortOrder)
+            {
+                case "An":
+                    stundeti = stundeti.OrderBy(b => b.An);
+                    break;
+                case "an_desc":
+                    stundeti = stundeti.OrderByDescending(b => b.An);
+                    break;
+                default:
+                    stundeti = stundeti.OrderBy(b => b.Nume);
+                    break;
+            }
+
+            int pageSize = 4;
+            return View(await PaginatedList<Student>.CreateAsync(stundeti.AsNoTracking(), pageNumber ?? 1, pageSize));
+
         }
 
         // GET: Studenti/Details/5
@@ -34,6 +67,9 @@ namespace ProiectMaster3.Controllers
             }
 
             var student = await _context.Studenti
+                .Include(p => p.Participari)
+                .ThenInclude(c => c.Curs)
+                .AsNoTracking()
                 .FirstOrDefaultAsync(m => m.ID == id);
             if (student == null)
             {
@@ -54,14 +90,22 @@ namespace ProiectMaster3.Controllers
         // more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("ID,Nume,Prenume,DataNasterii,An")] Student student)
+        public async Task<IActionResult> Create([Bind("Nume,Prenume,DataNasterii,An")] Student student)
         {
-            if (ModelState.IsValid)
+            try
             {
-                _context.Add(student);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                if (ModelState.IsValid)
+                {
+                    _context.Add(student);
+                    await _context.SaveChangesAsync();
+                    return RedirectToAction(nameof(Index));
+                }
             }
+            catch (DbUpdateException /* ex*/)
+            {
+                ModelState.AddModelError("", "Unable to save changes. " + "Try again, and if the problem persists ");
+            }
+
             return View(student);
         }
 
@@ -86,7 +130,7 @@ namespace ProiectMaster3.Controllers
         // more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("ID,Nume,Prenume,DataNasterii,An")] Student student)
+        public async Task<IActionResult> Edit(int id, [Bind("Nume,Prenume,DataNasterii,An")] Student student)
         {
             if (id != student.ID)
             {
@@ -117,7 +161,7 @@ namespace ProiectMaster3.Controllers
         }
 
         // GET: Studenti/Delete/5
-        public async Task<IActionResult> Delete(int? id)
+        public async Task<IActionResult> Delete(int? id, bool? saveChangesError = false)
         {
             if (id == null)
             {
@@ -125,10 +169,16 @@ namespace ProiectMaster3.Controllers
             }
 
             var student = await _context.Studenti
+                .AsNoTracking()
                 .FirstOrDefaultAsync(m => m.ID == id);
             if (student == null)
             {
                 return NotFound();
+            }
+
+            if (saveChangesError.GetValueOrDefault())
+            {
+                ViewData["ErrorMessage"] = "Delete failed. Try again";
             }
 
             return View(student);
@@ -140,9 +190,20 @@ namespace ProiectMaster3.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var student = await _context.Studenti.FindAsync(id);
-            _context.Studenti.Remove(student);
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            if (student == null)
+            {
+                return RedirectToAction(nameof(Index));
+            }
+            try
+            {
+                _context.Studenti.Remove(student);
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
+            }
+            catch (DbUpdateException /* ex */)
+            {
+                return RedirectToAction(nameof(Delete), new { id, saveChangesError = true });
+            }
         }
 
         private bool StudentExists(int id)
