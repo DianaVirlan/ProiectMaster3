@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using ProiectMaster3.Data;
+using ProiectMaster3.Hubs;
 
 namespace ProiectMaster3
 {
@@ -25,8 +26,14 @@ namespace ProiectMaster3
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbContext<ContextFacultate>(options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
             services.AddControllersWithViews();
+            services.AddDbContext<ContextFacultate>(options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+            services.AddSignalR().AddHubOptions<ChatHub>(options =>
+            {
+                options.EnableDetailedErrors = true;
+            });
+            services.AddApplicationInsightsTelemetry();
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -46,7 +53,7 @@ namespace ProiectMaster3
             app.UseStaticFiles();
 
             app.UseRouting();
-
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
@@ -54,6 +61,8 @@ namespace ProiectMaster3
                 endpoints.MapControllerRoute(
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}/{id?}");
+                    endpoints.MapHub<ChatHub>("/chathub");
+                endpoints.MapRazorPages();
             });
         }
     }
